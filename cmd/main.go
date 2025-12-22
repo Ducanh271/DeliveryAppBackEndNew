@@ -26,7 +26,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading config:", err)
 	}
-
 	// Init DB
 	db, err := database.NewConnection(cfg.DB.URL)
 	if err != nil {

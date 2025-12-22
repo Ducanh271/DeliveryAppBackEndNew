@@ -45,6 +45,8 @@ func (uow *sqlUnitOfWork) Execute(fn func(repoProvider func(repoType any) any) e
 
 		case (*RefreshTokenRepository)(nil): // (Thêm repo khác nếu cần)
 			return NewRefreshTokenRepository(tx)
+		case (*OrderRepository)(nil):
+			return NewOrderRepository(tx)
 
 		default:
 			return nil
