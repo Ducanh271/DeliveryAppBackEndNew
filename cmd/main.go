@@ -107,6 +107,7 @@ func main() {
 
 	reviewHandler := handlers.NewReviewHandler(reviewService)
 
+	chatHandler := handlers.NewChatHandler(chatService)
 	// 4.5 khoi tao middle ware
 	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
 	// 5. Khởi tạo Gin Engine
@@ -136,6 +137,7 @@ func main() {
 		orderHandler,
 		reviewHandler,
 		wsHandler,
+		chatHandler,
 	)
 
 	// 8. Run Server

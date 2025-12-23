@@ -53,6 +53,7 @@ func (r *messageRepo) GetMessagesByOrder(orderID int64, limit int, beforeID int6
 	for rows.Next() {
 		var m models.Message
 		rows.Scan(&m.ID, &m.OrderID, &m.FromUserID, &m.ToUserID, &m.Content, &m.IsRead, &m.CreatedAt)
+		m.Type = "message"
 		messages = append(messages, m)
 	}
 	return messages, nil

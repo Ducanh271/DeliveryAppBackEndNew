@@ -16,6 +16,7 @@ func SetupRoutes(
 	orderHandler *handlers.OrderHandler,
 	reviewHandler *handlers.ReviewHandler,
 	wsHandler *websocket.WSHandler,
+	chatHandler *handlers.ChatHandler, // <--- THÊM MỚI
 ) {
 	api := r.Group("api/v1")
 	api.POST("/signup", authHandler.SignUp)
@@ -48,6 +49,7 @@ func SetupRoutes(
 	shipper.GET("/orders", orderHandler.GetAvailableOrders)                  // Lấy đơn "processing" để nhận
 	shipper.GET("/orders/received-orders", orderHandler.GetMyShippingOrders) // Lấy đơn mình đang ship
 	shipper.GET("/orders/:id", orderHandler.GetDetail)
+	protected.GET("/orders/:id/messages", chatHandler.GetMessages)
 
 	// --- Admin ---
 	admin := protected.Group("/admin")
@@ -71,7 +73,6 @@ func SetupRoutes(
 	admin.POST("/orders/accept-order/:id", orderHandler.AdminAcceptOrder)
 	admin.GET("/stats", userHandler.GetDashboardStats)
 	admin.GET("/stats/orders", orderHandler.GetStats)
-
 	// Public (Get, Search)
 	// Lưu ý: Giờ đây Search và Get All dùng chung 1 hàm handler
 	api.GET("/products", productHandler.GetProducts)        // Xử lý cả /products?page=1 và /products?q=abc

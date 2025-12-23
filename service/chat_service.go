@@ -17,7 +17,14 @@ func NewChatService(msgRepo repository.MessageRepository, orderRepo repository.O
 
 // HandleChatMessage: Lưu tin nhắn và trả về tin nhắn đã lưu (có ID, CreatedAt)
 func (s *ChatService) HandleChatMessage(msg *models.Message) (*models.Message, error) {
-	// 1. Validate (VD: check order có tồn tại không, user có thuộc order không)
+	isOwner, _ := s.orderRepo.CheckOrderOwnership(msg.FromUserID, msg.OrderID)
+	if !isOwner {
+		return nil, ErrNotYourOrder
+	}
+	isOwner, _ = s.orderRepo.CheckShipperOwnership(msg.FromUserID, msg.OrderID)
+	if !isOwner {
+		return nil, ErrNotYourOrder
+	}
 	// (Tạm bỏ qua để đơn giản, nhưng nên thêm vào)
 
 	// 2. Lưu vào DB
@@ -42,4 +49,12 @@ func (s *ChatService) GetReceiverID(orderID, senderID int64) (int64, error) {
 		return order.UserID, nil
 	}
 	return 0, nil // Sender không liên quan đơn hàng
+}
+func (s *ChatService) GetMessageHistory(orderID int64, limit int, beforeID int64) ([]models.Message, error) {
+	// Mặc định limit nếu không truyền
+	if limit <= 0 {
+		limit = 20
+	}
+	// Gọi xuống Repository
+	return s.msgRepo.GetMessagesByOrder(orderID, limit, beforeID)
 }
