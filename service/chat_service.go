@@ -19,12 +19,12 @@ func NewChatService(msgRepo repository.MessageRepository, orderRepo repository.O
 func (s *ChatService) HandleChatMessage(msg *models.Message) (*models.Message, error) {
 	isOwner, _ := s.orderRepo.CheckOrderOwnership(msg.FromUserID, msg.OrderID)
 	if !isOwner {
-		return nil, ErrNotYourOrder
+		isOwner, _ = s.orderRepo.CheckShipperOwnership(msg.FromUserID, msg.OrderID)
+		if !isOwner {
+			return nil, ErrNotYourOrder
+		}
 	}
-	isOwner, _ = s.orderRepo.CheckShipperOwnership(msg.FromUserID, msg.OrderID)
-	if !isOwner {
-		return nil, ErrNotYourOrder
-	}
+
 	// (Tạm bỏ qua để đơn giản, nhưng nên thêm vào)
 
 	// 2. Lưu vào DB

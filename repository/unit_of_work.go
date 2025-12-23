@@ -47,7 +47,8 @@ func (uow *sqlUnitOfWork) Execute(fn func(repoProvider func(repoType any) any) e
 			return NewRefreshTokenRepository(tx)
 		case (*OrderRepository)(nil):
 			return NewOrderRepository(tx)
-
+		case (*ReviewRepository)(nil):
+			return NewReviewRepository(tx)
 		default:
 			return nil
 		}
