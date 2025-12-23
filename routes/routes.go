@@ -78,7 +78,7 @@ func SetupRoutes(
 	api.GET("/products", productHandler.GetProducts)        // Xử lý cả /products?page=1 và /products?q=abc
 	api.GET("/products/search", productHandler.GetProducts) // (Optional) Để tương thích ngược nếu FE đang gọi route này
 	api.GET("/products/:id", productHandler.GetProductByID)
-	api.GET("/products/:id/reviews")
+	api.GET("/products/:id/reviews", reviewHandler.GetReviewsByProduct)
 	api.GET("/ws", wsHandler.ServeWs)
 
 }
