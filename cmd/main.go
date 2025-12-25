@@ -53,7 +53,7 @@ func main() {
 	refreshTokenRepo := repository.NewRefreshTokenRepository(db)
 	orderRepo := repository.NewOrderRepository(db)
 	reviewRepo := repository.NewReviewRepository(db)
-	msgRepo := repository.NewMessageRepository(db)
+	msgRepo := repository.NewMessageRepository(db, cfg.AESKey)
 
 	chatService := service.NewChatService(msgRepo, orderRepo)
 
@@ -110,6 +110,7 @@ func main() {
 	chatHandler := handlers.NewChatHandler(chatService)
 	// 4.5 khoi tao middle ware
 	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
+	rateLimiter := middleware.RateLimitMiddleware(2, 5)
 	// 5. Khởi tạo Gin Engine
 	r := gin.Default()
 
@@ -138,6 +139,7 @@ func main() {
 		reviewHandler,
 		wsHandler,
 		chatHandler,
+		rateLimiter,
 	)
 
 	// 8. Run Server
