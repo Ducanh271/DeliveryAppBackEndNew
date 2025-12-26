@@ -8,6 +8,7 @@ import (
 	"example.com/delivery-app/infrastructure/storage"
 	"example.com/delivery-app/models"
 	"example.com/delivery-app/repository"
+	"example.com/delivery-app/utils"
 	"fmt"
 	"golang.org/x/sync/errgroup"
 	"log"
@@ -17,17 +18,20 @@ import (
 
 type ProductService struct {
 	productRepo repository.ProductRepository
+	orderRepo   repository.OrderRepository
 	imageSvc    storage.ImageStorageService
 	uow         repository.UnitOfWork
 }
 
 func NewProductService(
 	productRepo repository.ProductRepository,
+	orderRepo repository.OrderRepository,
 	imageSvc storage.ImageStorageService,
 	uow repository.UnitOfWork,
 ) *ProductService {
 	return &ProductService{
 		productRepo: productRepo,
+		orderRepo:   orderRepo,
 		imageSvc:    imageSvc,
 		uow:         uow,
 	}
@@ -67,6 +71,8 @@ func (s *ProductService) CreateProduct(ctx context.Context, req *dto.CreateProdu
 	}
 
 	// BƯỚC 2: Lưu vào CSDL trong một Transaction (UoW)
+	req.Name = utils.SanitizeText(req.Name)
+	req.Description = utils.SanitizeHTML(req.Description)
 	product := &models.Product{
 		Name:        req.Name,
 		Description: req.Description,
@@ -114,6 +120,10 @@ func (s *ProductService) CreateProduct(ctx context.Context, req *dto.CreateProdu
 
 // === LOGIC TỪ DeleteProductHandler ===
 func (s *ProductService) DeleteProduct(ctx context.Context, id int64) error {
+	isInActiveOrder, err := s.orderRepo.IsProductInActiveOrder(id) // Cần viết hàm này
+	if isInActiveOrder {
+		return errors.New("không thể xóa sản phẩm đang được giao dịch")
+	}
 
 	// BƯỚC 1: Lấy thông tin ảnh (cả Image IDs và Public IDs) TRƯỚC
 	images, err := s.productRepo.GetImagesByProductID(id)

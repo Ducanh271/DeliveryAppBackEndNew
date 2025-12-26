@@ -29,6 +29,7 @@ var (
 	ErrOrderNotFound      = errors.New("order not found")
 	ErrOrderNotPending    = errors.New("order is not in pending status")
 	ErrNotYourOrder       = errors.New("this order does not belong to you")
+	ErrInvalidReceiver    = errors.New("Receiver is not relative with this order")
 	ErrOrderNotOwned      = errors.New("you do not have permission to manage this order")
 	ErrMaxOrdersReached   = errors.New("you have reached the maximum number of orders")
 	ErrCannotCancel       = errors.New("cannot cancel this order (not pending)")

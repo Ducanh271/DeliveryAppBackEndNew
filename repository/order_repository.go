@@ -21,6 +21,7 @@ type OrderRepository interface {
 	GetItemsByOrderID(orderID int64) ([]models.OrderItem, error)
 
 	// Check
+	IsProductInActiveOrder(productID int64) (bool, error)
 	CheckOrderOwnership(userID, orderID int64) (bool, error)
 	CheckShipperOwnership(shipperID, orderID int64) (bool, error)
 	CountActiveOrdersByShipper(shipperID int64) (int, error)
@@ -316,4 +317,26 @@ func (r *orderRepo) GetImageURLsByIDs(imageIDs []int64) (map[int64]string, error
 		result[id] = url
 	}
 	return result, nil
+}
+
+// [THÊM MỚI]
+func (r *orderRepo) IsProductInActiveOrder(productID int64) (bool, error) {
+	// Các trạng thái được coi là Active: pending, processing, shipping
+	query := `
+        SELECT 1 
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.id
+        WHERE oi.product_id = ? 
+        AND o.order_status IN ('pending', 'processing', 'shipping')
+        LIMIT 1`
+
+	var exists int
+	err := r.db.QueryRow(query, productID).Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }

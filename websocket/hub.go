@@ -64,6 +64,23 @@ func (h *Hub) Run() {
 
 // Logic xử lý tin nhắn (Tách ra cho gọn)
 func (h *Hub) handleMessage(sender *Client, msg *models.Message) {
+	// --- 1. KIỂM TRA RATE LIMIT (TỐC ĐỘ) ---
+	// Hàm Allow() trả về false nếu hết lượt
+	if !sender.Limiter.Allow() {
+		h.sendError(sender, "Bạn đang gửi tin quá nhanh. Vui lòng chậm lại!")
+		return
+	}
+
+	// --- 2. KIỂM TRA ĐỘ DÀI TIN NHẮN ---
+	const MaxContentLength = 1000 // Ví dụ: giới hạn 1000 ký tự
+	if len(msg.Content) > MaxContentLength {
+		h.sendError(sender, "Tin nhắn quá dài (tối đa 1000 ký tự).")
+		return
+	}
+	if len(msg.Content) == 0 && msg.Type == "chat_message" {
+		h.sendError(sender, "Nội dung tin nhắn không được để trống.")
+		return
+	}
 	// Xác định người nhận
 	var receiverID int64
 	var err error
@@ -71,20 +88,21 @@ func (h *Hub) handleMessage(sender *Client, msg *models.Message) {
 	switch msg.Type {
 	case "chat_message":
 		// Nếu client không gửi ToUserID, ta tự tìm
-		if msg.ToUserID == 0 {
-			receiverID, err = h.chatService.GetReceiverID(msg.OrderID, sender.ID)
-			if err != nil || receiverID == 0 {
-				return
-			}
-			msg.ToUserID = receiverID
-		} else {
-			receiverID = msg.ToUserID
+		receiverID, err = h.chatService.GetReceiverID(msg.OrderID, sender.ID)
+		if err != nil {
+			// SỬA: Gửi lỗi về cho sender thay vì return im lặng
+			h.sendError(sender, "Không thể gửi tin: "+err.Error())
+			return
 		}
 
-		// Lưu DB qua Service
+		if msg.ToUserID == sender.ID {
+			h.sendError(sender, "Không thể tự chat với chính mình")
+			return
+		}
 		msg.FromUserID = sender.ID
 		savedMsg, err := h.chatService.HandleChatMessage(msg)
 		if err != nil {
+			h.sendError(sender, "Lỗi: "+err.Error())
 			return
 		}
 
@@ -106,6 +124,21 @@ func (h *Hub) handleMessage(sender *Client, msg *models.Message) {
 	}
 }
 
+func (h *Hub) sendError(client *Client, errMsg string) {
+	errorMsg := &models.Message{
+		Type:    "error",
+		Content: errMsg,
+		// Có thể thêm CreatedAt để client hiển thị đúng chuẩn
+	}
+	data, _ := json.Marshal(errorMsg)
+	// Gửi thẳng vào kênh Send của client đó
+	select {
+	case client.Send <- data:
+	default:
+		close(client.Send)
+		delete(h.Clients, client.ID)
+	}
+}
 func (h *Hub) SendToUser(userID int64, msg *models.Message) {
 	h.mu.RLock()
 	client, ok := h.Clients[userID]

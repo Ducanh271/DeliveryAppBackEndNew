@@ -5,16 +5,19 @@ import (
 	"encoding/base64"
 	"errors"
 	"log"
+
 	// "example.com/delivery-app/middleware"
 	"github.com/golang-jwt/jwt/v5"
+
+	"fmt"
+	"time"
 
 	"example.com/delivery-app/dto"
 	"example.com/delivery-app/models"
 	"example.com/delivery-app/repository"
 	"example.com/delivery-app/security"
-	"fmt"
+	"example.com/delivery-app/utils"
 	"golang.org/x/crypto/bcrypt"
-	"time"
 )
 
 type AuthService struct {
@@ -42,6 +45,9 @@ func NewAuthService(
 }
 
 func (s *AuthService) SignUp(req *dto.SignUpRequest) (*models.User, error) {
+	if !utils.IsPasswordStrong(req.Password) {
+		return nil, errors.New("Mật khẩu quá yếu, cần ít nhất 8 ký tự bao gồm chữ hoa, số và ký tự đặc biệt")
+	}
 	// Check if email already exists
 	exists, err := s.userRepo.CheckEmailExists(req.Email)
 	if err != nil {
@@ -257,12 +263,9 @@ func (s *AuthService) ResetPassword(req *dto.ResetPasswordRequest) error {
 	if !ok || email == "" {
 		return ErrInvalidResetToken // Token không có email
 	}
-
-	// 3. Validate mật khẩu mới (nếu cần)
-	// if !isPasswordComplex(req.NewPassword) { // Dùng lại hàm từ SignUp
-	// 	return ErrPasswordTooWeak
-	// }
-	//
+	if !utils.IsPasswordStrong(req.NewPassword) {
+		return errors.New("Mật khẩu mới quá yếu, cần ít nhất 8 ký tự, bao gồm chữ hoa, chữ số và kí tự đặc biệt")
+	}
 	// 4. Hash mật khẩu
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {

@@ -8,22 +8,6 @@ import (
 	// "time"
 )
 
-// ProductResponse là DTO "fat query".
-// Service sẽ sử dụng các hàm repo "clean" để xây dựng DTO này.
-//
-//	type ProductResponse struct {
-//		ID          int64                 `json:"id"`
-//		Name        string                `json:"name"`
-//		Description string                `json:"description"`
-//		Price       float64               `json:"price"`
-//		QtyInitial  int64                 `json:"qty_initial"`
-//		QtySold     int64                 `json:"qty_sold"`
-//		CreatedAt   time.Time             `json:"created_at"`
-//		Images      []models.ProductImage `json:"images"`
-//		AvgRate     float64               `json:"avg_rate"`
-//		ReviewCount int64                 `json:"review_count"`
-//	}
-//
 // 1. ĐỊNH NGHĨA INTERFACE (Đã sửa)
 type ProductRepository interface {
 	// Write (Dùng trong UoW)
@@ -46,7 +30,7 @@ type ProductRepository interface {
 		Avg   float64
 		Count int64
 	}, error)
-
+	UpdateQtySold(productID int64, quantity int64) error
 	// Read (Paginated) - Chỉ trả về model
 	GetAll(page, limit int64) ([]models.Product, int64, error)               // ⬅️ SỬA (int -> int64)
 	Search(query string, page, limit int64) ([]models.Product, int64, error) // ⬅️ SỬA (int -> int64)
@@ -376,4 +360,27 @@ func (r *productRepo) GetAverageRatingsByProductIDs(ids []int64) (map[int64]stru
 		}{Avg: avg, Count: count}
 	}
 	return result, rows.Err()
+}
+
+// [THÊM MỚI]
+func (r *productRepo) UpdateQtySold(productID int64, quantity int64) error {
+	// Query này vừa trừ kho, vừa đảm bảo không bị âm kho (Atomic Update)
+	// Nếu qty_initial - qty_sold < quantity thì RowsAffected sẽ = 0
+	query := `UPDATE Products 
+              SET qty_sold = qty_sold + ? 
+              WHERE id = ? AND (qty_initial - qty_sold) >= ?`
+
+	res, err := r.db.Exec(query, quantity, productID, quantity)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("hết hàng hoặc sản phẩm không tồn tại")
+	}
+	return nil
 }

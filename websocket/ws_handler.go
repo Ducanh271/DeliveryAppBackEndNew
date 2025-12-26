@@ -1,11 +1,12 @@
 package websocket
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
+	"golang.org/x/time/rate"
+	"net/http"
+	"time"
 )
 
 type WSHandler struct {
@@ -54,11 +55,12 @@ func (h *WSHandler) ServeWs(c *gin.Context) {
 	if err != nil {
 		return
 	}
-
+	limiter := rate.NewLimiter(rate.Every(time.Second), 5)
 	client := &Client{
-		ID:   userID,
-		Conn: conn,
-		Send: make(chan []byte, 256),
+		ID:      userID,
+		Conn:    conn,
+		Send:    make(chan []byte, 256),
+		Limiter: limiter,
 	}
 
 	h.hub.Register <- client

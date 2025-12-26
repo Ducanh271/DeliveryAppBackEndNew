@@ -10,6 +10,7 @@ import (
 	"example.com/delivery-app/infrastructure/storage"
 	"example.com/delivery-app/models"
 	"example.com/delivery-app/repository"
+	"example.com/delivery-app/utils"
 )
 
 type ReviewService struct {
@@ -73,6 +74,7 @@ func (s *ReviewService) CreateReview(ctx context.Context, userID int64, req *dto
 		}
 		uploadedImages = append(uploadedImages, UploadedImage{URL: url, PublicID: publicID})
 	}
+	req.Content = utils.SanitizeText(req.Content)
 
 	// 4. Lưu vào DB (Transaction UoW)
 	review := &models.Review{

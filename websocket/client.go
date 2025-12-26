@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"example.com/delivery-app/models"
 	"github.com/gorilla/websocket"
+	"golang.org/x/time/rate" // [Thêm thư viện này]
 	"log"
 	"time"
 )
@@ -13,13 +14,14 @@ const (
 	writeWait      = 10 * time.Second
 	pongWait       = 60 * time.Second
 	pingPeriod     = (pongWait * 9) / 10
-	maxMessageSize = 512
+	maxMessageSize = 4096
 )
 
 type Client struct {
-	ID   int64
-	Conn *websocket.Conn
-	Send chan []byte
+	ID      int64
+	Conn    *websocket.Conn
+	Send    chan []byte
+	Limiter *rate.Limiter
 }
 
 func (c *Client) ReadPump(hub *Hub) {

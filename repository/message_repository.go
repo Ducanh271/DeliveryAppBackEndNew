@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"example.com/delivery-app/models"
+	"example.com/delivery-app/security"
 	"time"
 )
 
@@ -14,17 +15,26 @@ type MessageRepository interface {
 }
 
 type messageRepo struct {
-	db DBTX
+	db        DBTX
+	secretKey string
 }
 
-func NewMessageRepository(db DBTX) MessageRepository {
-	return &messageRepo{db: db}
+func NewMessageRepository(db DBTX, secretKey string) MessageRepository {
+	return &messageRepo{
+		db:        db,
+		secretKey: secretKey,
+	}
 }
 
 func (r *messageRepo) SaveMessage(msg *models.Message) error {
+	// 1. Mã hóa nội dung tin nhắn
+	encryptedContent, err := security.Encrypt(msg.Content, r.secretKey)
+	if err != nil {
+		return err
+	}
 	query := `INSERT INTO messages(order_id, sender_id, receiver_id, content, is_read, created_at) VALUES (?, ?, ?, ?, ?, ?)`
 	msg.CreatedAt = time.Now()
-	res, err := r.db.Exec(query, msg.OrderID, msg.FromUserID, msg.ToUserID, msg.Content, false, msg.CreatedAt)
+	res, err := r.db.Exec(query, msg.OrderID, msg.FromUserID, msg.ToUserID, encryptedContent, false, msg.CreatedAt)
 	if err != nil {
 		return err
 	}
@@ -53,6 +63,13 @@ func (r *messageRepo) GetMessagesByOrder(orderID int64, limit int, beforeID int6
 	for rows.Next() {
 		var m models.Message
 		rows.Scan(&m.ID, &m.OrderID, &m.FromUserID, &m.ToUserID, &m.Content, &m.IsRead, &m.CreatedAt)
+		decryptedContent, err := security.Decrypt(m.Content, r.secretKey)
+		if err == nil {
+			m.Content = decryptedContent // Gán lại nội dung đã giải mã
+		} else {
+			// Nếu lỗi (ví dụ dữ liệu cũ chưa mã hóa), giữ nguyên hoặc báo lỗi
+			m.Content = "[Encrypted Message]"
+		}
 		m.Type = "message"
 		messages = append(messages, m)
 	}

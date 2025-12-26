@@ -31,6 +31,7 @@ type Config struct {
 	DB            DBConfig
 	CloudinaryURL string
 	JWTSecret     string
+	AESKey        string
 	Port          string // Thêm Port cho server
 }
 
@@ -56,6 +57,7 @@ func LoadConfig() (Config, error) {
 		Host:     os.Getenv("SMTP_HOST"),
 		Port:     os.Getenv("SMTP_PORT"),
 	}
+	cfg.AESKey = os.Getenv("AES_KEY_MESSAGE")
 
 	// 2. Nạp Config DB
 	cfg.DB.User = os.Getenv("DB_USER")

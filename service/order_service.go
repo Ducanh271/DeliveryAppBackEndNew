@@ -40,7 +40,12 @@ func (s *OrderService) CreateOrder(userID int64, req *dto.CreateOrderRequest) er
 
 	// 1. Validate sản phẩm và tính tiền
 	for i, itemReq := range req.Products {
+
 		product, err := s.productRepo.GetByID(itemReq.ProductID)
+		currentStock := product.QtyInitial - product.QtySold
+		if currentStock < itemReq.Quantity {
+			return fmt.Errorf("sản phẩm '%s' không đủ hàng (còn lại: %d)", product.Name, currentStock)
+		}
 		if err != nil {
 			return fmt.Errorf("product %d not found", itemReq.ProductID)
 		}
@@ -84,7 +89,7 @@ func (s *OrderService) CreateOrder(userID int64, req *dto.CreateOrderRequest) er
 	// 3. Transaction (UoW)
 	err := s.uow.Execute(func(repoProvider func(any) any) error {
 		ordRepo := repoProvider((*repository.OrderRepository)(nil)).(repository.OrderRepository)
-
+		prodRepo := repoProvider((*repository.ProductRepository)(nil)).(repository.ProductRepository) // [LƯU Ý] Cần thêm dòng này
 		// Lưu Order
 		orderID, err := ordRepo.CreateOrder(order)
 		if err != nil {
@@ -96,6 +101,9 @@ func (s *OrderService) CreateOrder(userID int64, req *dto.CreateOrderRequest) er
 			item.OrderID = orderID
 			if err := ordRepo.CreateOrderItem(&item); err != nil {
 				return err
+			}
+			if err := prodRepo.UpdateQtySold(item.ProductID, item.Quantity); err != nil {
+				return fmt.Errorf("lỗi cập nhật kho cho sp %d: %w", item.ProductID, err)
 			}
 		}
 		return nil
