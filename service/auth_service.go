@@ -354,7 +354,7 @@ func (s *AuthService) CreateTokens(user *models.User) (string, string, error) {
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userID": user.ID,
 		"role":   user.Role,
-		"exp":    time.Now().Add(150 * time.Minute).Unix(),
+		"exp":    time.Now().Add(5 * time.Minute).Unix(),
 	})
 	accessTokenStr, err := accessToken.SignedString([]byte(s.jwtSecret))
 	if err != nil {

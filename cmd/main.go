@@ -114,16 +114,11 @@ func main() {
 	rateLimiter := middleware.RateLimitMiddleware(2, 5)
 	// 5. Khởi tạo Gin Engine
 	r := gin.Default()
+	// Tin tưởng Nginx (đang chạy ở localhost) để lấy đúng IP thật của người dùng
+	r.SetTrustedProxies([]string{"127.0.0.1"})
 	// 6. Cấu hình Middleware (CORS)
 	r.Use(func(c *gin.Context) {
-		// c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
-		origin := c.Request.Header.Get("Origin")
-		if origin != "" {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-		} else {
-			// Fallback (cho trường hợp test bằng Postman không gửi Origin)
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		}
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 		// c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")

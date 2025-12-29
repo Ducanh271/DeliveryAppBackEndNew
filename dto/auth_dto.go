@@ -47,7 +47,7 @@ type RefreshTokenRequest struct {
 
 type RefreshTokenResponse struct {
 	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refersh_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 type LogOutRequest struct {
