@@ -34,8 +34,15 @@ func (h *AuthHandler) SignUp(c *gin.Context) {
 		if errors.Is(err, service.ErrEmailInUse) {
 			c.JSON(http.StatusConflict, gin.H{"error": "Email already in use"})
 			return
+		} else if errors.Is(err, service.ErrInvalidEmail) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		} else if errors.Is(err, service.ErrInvalidPassword) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to sign up"})
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -169,12 +176,12 @@ func (h *AuthHandler) ResetPasswordHandler(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidResetToken) || errors.Is(err, service.ErrTokenPurposeMismatch) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		} else
-		// else if errors.Is(err, service.ErrPasswordTooWeak) {
-		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})}
-		{
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not update password"})
+			return
+		} else if errors.Is(err, service.ErrWeakPassword) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not update password"})
 		return
 	}
 

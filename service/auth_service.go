@@ -46,7 +46,7 @@ func NewAuthService(
 
 func (s *AuthService) SignUp(req *dto.SignUpRequest) (*models.User, error) {
 	if !utils.IsPasswordStrong(req.Password) {
-		return nil, errors.New("Mật khẩu quá yếu, cần ít nhất 8 ký tự bao gồm chữ hoa, số và ký tự đặc biệt")
+		return nil, ErrWeakPassword
 	}
 	// Check if email already exists
 	exists, err := s.userRepo.CheckEmailExists(req.Email)
@@ -354,7 +354,7 @@ func (s *AuthService) CreateTokens(user *models.User) (string, string, error) {
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userID": user.ID,
 		"role":   user.Role,
-		"exp":    time.Now().Add(5 * time.Minute).Unix(),
+		"exp":    time.Now().Add(100 * time.Minute).Unix(),
 	})
 	accessTokenStr, err := accessToken.SignedString([]byte(s.jwtSecret))
 	if err != nil {

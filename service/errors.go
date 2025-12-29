@@ -22,6 +22,7 @@ var (
 	ErrOTPNotFound = errors.New("OTP not found")
 
 	ErrInvalidPassword = errors.New("Invalid password")
+	ErrWeakPassword    = errors.New("Mật khẩu quá yếu, cần ít nhất 8 ký tự bao gồm chữ hoa, số và ký tự đặc biệt")
 
 	ErrProductNotFound = errors.New("Product not found")
 	ErrNoImages        = errors.New("At least one image is required")
